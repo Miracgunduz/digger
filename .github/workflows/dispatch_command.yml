@@ -1,0 +1,46 @@
+name: Komut Calistir
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Calistirilacak komut (tara, trendler, rakipbul)"
+        required: true
+        type: choice
+        options:
+          - tara
+          - trendler
+          - rakipbul
+      argument:
+        description: "/rakipbul icin fikir metni (digerlerinde bos birakilir)"
+        required: false
+        default: ""
+
+concurrency:
+  group: firsat-avcisi-dispatch
+  cancel-in-progress: false
+
+jobs:
+  run-command:
+    runs-on: ubuntu-latest
+    # /tara ve /trendler Reddit RSS hiz siniri yuzunden ~15-20 dk surebiliyor
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bagimliliklari kur
+        run: pip install -r requirements.txt
+
+      - name: Komutu calistir
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
+          DISPATCH_COMMAND: ${{ github.event.inputs.command }}
+          DISPATCH_ARGUMENT: ${{ github.event.inputs.argument }}
+        run: python run_command.py
