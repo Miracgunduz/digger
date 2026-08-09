@@ -1,6 +1,7 @@
 .env
 __pycache__/
 *.pyc
-state/*.txt
+# last_update_id.txt BILEREK ignore edilmiyor: GitHub Actions ephemeral
+# runner'lar arasi Telegram offset'ini korumak icin git'e commit'leniyor.
 state/*.lock
 logs/*.log
