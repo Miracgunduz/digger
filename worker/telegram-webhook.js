@@ -3,7 +3,7 @@
  *
  * Cloudflare Worker (ucretsiz katman). Telegram'dan gelen her mesaji
  * aninda karsilar; /help ve /start'i direkt yanitlar, diger komutlari
- * (/tara, /trendler, /rakipbul) GitHub Actions'ta dispatch_command.yml
+ * (/tara, /trendler, /rakipbul, /maliyet) GitHub Actions'ta dispatch_command.yml
  * workflow'unu workflow_dispatch ile tetikleyerek calistirir (agir islem -
  * Reddit taramasi + Gemini analizi - GitHub'in sinirsiz outbound agina
  * sahip runner'inda yapilir, Worker sadece yonlendirir).
@@ -23,12 +23,15 @@ const HELP_TEXT =
   "/tara veya /scan — şimdi anlık tarama başlat\n" +
   "/rakipbul <fikir> — verilen fikir için rakip ve pazar boşluğu analizi yap\n" +
   "  örnek: /rakipbul Notion benzeri sade not alma uygulaması\n" +
+  "/maliyet <fikir> — verilen fikir için altyapı maliyeti ve minimum abonelik ücreti hesapla\n" +
+  "  örnek: /maliyet Notion benzeri sade not alma uygulaması\n" +
   "/trendler — son 1 haftanın şikayet/fırsat taramasını yap\n" +
   "/help — bu mesajı göster\n\n" +
   "Otomatik bültenler her gün 09:00 ve 21:00'de kendiliğinden gönderilir.";
 
 const SCAN_COMMANDS = new Set(["/tara", "/scan"]);
 const COMPETITOR_COMMANDS = new Set(["/rakipbul"]);
+const COST_COMMANDS = new Set(["/maliyet"]);
 const TREND_COMMANDS = new Set(["/trendler"]);
 const HELP_COMMANDS = new Set(["/start", "/help"]);
 
@@ -121,6 +124,23 @@ async function handleUpdate(update, env) {
     }
     await sendTelegramMessage(env, chatId, "🔍 Rakip analizi yapılıyor, birazdan sonuç gelecek...");
     const resp = await triggerWorkflow(env, "rakipbul", argument);
+    if (!resp.ok) {
+      await sendTelegramMessage(env, chatId, `❌ Analiz tetiklenemedi (GitHub yanıtı: ${resp.status}).`);
+    }
+    return;
+  }
+
+  if (COST_COMMANDS.has(command)) {
+    if (!argument) {
+      await sendTelegramMessage(
+        env,
+        chatId,
+        "⚠️ Kullanım: /maliyet <fikir veya proje adı>\nÖrnek: /maliyet Notion benzeri sade not alma uygulaması"
+      );
+      return;
+    }
+    await sendTelegramMessage(env, chatId, "💸 Maliyet analizi yapılıyor, birazdan sonuç gelecek...");
+    const resp = await triggerWorkflow(env, "maliyet", argument);
     if (!resp.ok) {
       await sendTelegramMessage(env, chatId, `❌ Analiz tetiklenemedi (GitHub yanıtı: ${resp.status}).`);
     }

@@ -4,15 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       command:
-        description: "Calistirilacak komut (tara, trendler, rakipbul)"
+        description: "Calistirilacak komut (tara, trendler, rakipbul, maliyet)"
         required: true
         type: choice
         options:
           - tara
           - trendler
           - rakipbul
+          - maliyet
       argument:
-        description: "/rakipbul icin fikir metni (digerlerinde bos birakilir)"
+        description: "/rakipbul veya /maliyet icin fikir metni (digerlerinde bos birakilir)"
         required: false
         default: ""
 

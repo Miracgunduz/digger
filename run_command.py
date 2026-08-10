@@ -10,6 +10,7 @@ Desteklenen komutlar (DISPATCH_COMMAND ortam degiskeni):
   tara       -> gunluk tarama + Telegram bulteni
   trendler   -> haftalik sikayet/firsat taramasi
   rakipbul   -> DISPATCH_ARGUMENT'taki fikir icin rakip analizi
+  maliyet    -> DISPATCH_ARGUMENT'taki fikir icin altyapi maliyet analizi
 """
 
 import os
@@ -17,6 +18,7 @@ import sys
 
 from scanner import (
     SUBREDDITS,
+    analyze_cost,
     analyze_pain_points,
     chunk_text,
     fetch_reddit_pain_points,
@@ -60,9 +62,27 @@ def run_rakipbul(argument):
     logger.info("Rakip analizi tamamlandi.")
 
 
+def run_maliyet(argument):
+    if not argument:
+        send_telegram_message(
+            ["⚠️ Kullanım: /maliyet <fikir veya proje adı>\nÖrnek: /maliyet Notion benzeri sade not alma uygulaması"]
+        )
+        return
+
+    result_text = analyze_cost(argument)
+    message = f"💸 *Maliyet Analizi: {argument}*\n\n{result_text}"
+    send_telegram_message(chunk_text(message))
+    logger.info("Maliyet analizi tamamlandi.")
+
+
 COMMAND_HANDLERS = {
     "tara": run_tara,
     "trendler": run_trendler,
+}
+
+ARG_COMMAND_HANDLERS = {
+    "rakipbul": run_rakipbul,
+    "maliyet": run_maliyet,
 }
 
 
@@ -83,8 +103,8 @@ def main():
     logger.info("Komut alindi: %s", command)
 
     try:
-        if command == "rakipbul":
-            run_rakipbul(argument)
+        if command in ARG_COMMAND_HANDLERS:
+            ARG_COMMAND_HANDLERS[command](argument)
         elif command in COMMAND_HANDLERS:
             COMMAND_HANDLERS[command]()
         else:

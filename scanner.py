@@ -3,7 +3,7 @@ Firsat Avcisi - ortak cekirdek mantik.
 
 Reddit veri toplama, Gemini analizi ve Telegram bildirimi burada tanimli.
 Bu modul tek basina calismaz; notify.py (zamanlanmis bildirim) ve
-listen.py (komutla tetiklenen tarama) tarafindan import edilir.
+run_command.py (workflow_dispatch ile tetiklenen komutlar) tarafindan import edilir.
 """
 
 import html
@@ -70,6 +70,7 @@ KURALLAR:
 - Sadece tek bir yazılımcının sıfır sermaye ile 1-2 ayda MVP yapabileceği EN İYİ 3 fikri seç.
 - Orijinal fikri sadece özetleme, projeyi çok daha kârlı veya çekici yapacak bir 'Ekstra İnovasyon' ekle.
 - Seçtiğin her fikir için piyasadaki rakipleri ve pazardaki boşluğu da analiz et.
+- Fikirlerin teknik zorluk derecesini belirlerken, Python, .NET, CSS ve SQL dillerine aşina olan bir geliştiricinin profiline göre 1 ile 10 arasında bir puan ver. Puanı şu emojilerle işaretle: 🟢 (1-3, kolay) / 🟠 (4-7, orta) / 🔴 (8-10, zor).
 ÇIKTI FORMATI:
 SADECE aşağıdaki JSON formatında çıktı ver. JSON bloğu dışında selamlama veya açıklama yazma:
 {
@@ -79,6 +80,8 @@ SADECE aşağıdaki JSON formatında çıktı ver. JSON bloğu dışında selaml
       "kaynak_subreddit": "r/isim",
       "orijinal_fikir_ozeti": "Gönderinin ve problemin özeti",
       "neden_mantikli_ve_uygun": "Neden bütçesiz yapılmaya uygun?",
+      "teknik_zorluk_puani": "Örn: 🟠 6/10 (Sadece sayı ve uygun renkli emoji)",
+      "gereken_teknolojiler": "Projenin yapılması için gereken temel diller ve frameworkler (Örn: Python, FastAPI, React)",
       "ekstra_inovasyon": "Projeyi 10x yapacak senin eklentin",
       "rakip_analizi_ve_acik_kapi": "Piyasadaki mevcut büyük veya benzer rakipler kimler? Onların zayıf yönleri (pahalı, karmaşık, kötü destek vb.) neler? Ben hangi nişe/boşluğa odaklanarak pazardan pay çalabilirim?",
       "hedef_kitle_ve_monetizasyon": "Kim kullanır, nasıl para kazanılır?"
@@ -87,6 +90,10 @@ SADECE aşağıdaki JSON formatında çıktı ver. JSON bloğu dışında selaml
 }"""
 
 COMPETITOR_SYSTEM_PROMPT = """Sen uzman bir pazar araştırmacısısın. Kullanıcının verdiği ürün fikri için piyasadaki mevcut popüler rakipleri listele, onların zayıf/eksik yönlerini analiz et ve tek bir indie geliştiricinin onlardan nasıl pazar payı çalabileceğini (fırsat boşluğunu) net bir şekilde açıkla.
+
+Cevabini Telegram'da guzel gorunecek sade Markdown ile ver (kalin baslik/ifadeler icin *yildiz*, madde isaretleri icin '-', kod bloğu veya '#' baslik kullanma)."""
+
+COST_SYSTEM_PROMPT = """Sen kıdemli bir Cloud Mimarı ve Finansal Analistsin. Kullanıcının verdiği proje fikri için ilk 6 aylık tahmini sunucu (AWS, Vercel vb.), veritabanı ve dış API (OpenAI, Stripe vb.) masraflarını çıkar. Projenin zarar etmemesi için kullanıcıdan alınması gereken minimum aylık abonelik ücretini hesapla ve bunu detaylı bir fatura dökümü gibi Markdown formatında sun.
 
 Cevabini Telegram'da guzel gorunecek sade Markdown ile ver (kalin baslik/ifadeler icin *yildiz*, madde isaretleri icin '-', kod bloğu veya '#' baslik kullanma)."""
 
@@ -325,6 +332,18 @@ def research_competitors(idea_text):
     return raw_text.strip()
 
 
+def analyze_cost(idea_text):
+    """/maliyet komutu icin: verilen fikir/proje metnini Gemini'ye gonderip
+    ilk 6 ayin tahmini altyapi maliyeti ve minimum abonelik fiyati hakkinda
+    serbest metin (Markdown) alir."""
+    if not idea_text or not idea_text.strip():
+        raise ValueError("Analiz edilecek fikir metni bos.")
+
+    user_message = f"Kullanicinin urun/proje fikri:\n\n{idea_text.strip()}"
+    raw_text = _call_gemini(COST_SYSTEM_PROMPT, user_message, json_mode=False, max_output_tokens=2048)
+    return raw_text.strip()
+
+
 def analyze_pain_points(pain_data):
     """/trendler komutu icin: sikayet dolu Reddit verisini Gemini'ye gonderip
     en acil 3 pain point ve Micro-SaaS cozüm onerilerini serbest metin (Markdown) olarak alir."""
@@ -382,6 +401,8 @@ def format_telegram_message(bulten_json):
             f"📍 Kaynak: {fikir.get('kaynak_subreddit', '-')}\n\n"
             f"📝 *Özet:* {fikir.get('orijinal_fikir_ozeti', '-')}\n\n"
             f"✅ *Neden Uygun:* {fikir.get('neden_mantikli_ve_uygun', '-')}\n\n"
+            f"🛠️ *Teknik Zorluk:* {fikir.get('teknik_zorluk_puani', '-')}\n"
+            f"🧰 *Gereken Teknolojiler:* {fikir.get('gereken_teknolojiler', '-')}\n\n"
             f"💡 *Ekstra İnovasyon:* {fikir.get('ekstra_inovasyon', '-')}\n\n"
             f"🥊 *Rakip Analizi & Açık Kapı:* {fikir.get('rakip_analizi_ve_acik_kapi', '-')}\n\n"
             f"💰 *Hedef Kitle & Monetizasyon:* {fikir.get('hedef_kitle_ve_monetizasyon', '-')}"
