@@ -307,7 +307,10 @@ def analyze_with_gemini(reddit_data):
         + json.dumps(reddit_data, ensure_ascii=False, indent=2)
     )
 
-    raw_text = _call_gemini(DAILY_BULLETIN_SYSTEM_PROMPT, user_message, json_mode=True)
+    # max_output_tokens yukseltildi: rakip_analizi_ve_acik_kapi alani eklendikten
+    # sonra 3 fikirlik JSON bazen 4096 token sinirinda kesilip parse hatasi
+    # veriyordu (bkz. 2026-08-10 sabah calismasinin hatasi).
+    raw_text = _call_gemini(DAILY_BULLETIN_SYSTEM_PROMPT, user_message, json_mode=True, max_output_tokens=8192)
     return parse_ai_json(raw_text)
 
 
