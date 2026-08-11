@@ -456,7 +456,14 @@ def chunk_text(text, limit=TELEGRAM_CHUNK_LIMIT):
 
 
 def send_telegram_message(chunks, chat_id=None):
-    """Hazirlanan Markdown mesaj(lar)ini Telegram Bot API ile gonderir."""
+    """Hazirlanan Markdown mesaj(lar)ini Telegram Bot API ile gonderir.
+
+    Gemini'nin ürettiği serbest metinler (rakip/maliyet/trend analizleri) bazen
+    Telegram'in eski 'Markdown' ayristiricisini bozan eslesmemis '*', '_' gibi
+    karakterler icerebiliyor; bu durumda Telegram 400 Bad Request donup mesaj
+    hic gitmiyor. Bunu onlemek icin Markdown reddedilirse ayni mesaj duz metin
+    (parse_mode yok) olarak otomatik tekrar denenir - bicimlendirme kaybolsa
+    da icerik her zaman ulasir."""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     target_chat_id = chat_id or TELEGRAM_CHAT_ID
 
@@ -469,6 +476,10 @@ def send_telegram_message(chunks, chat_id=None):
         }
         try:
             resp = requests.post(url, json=payload, timeout=15)
+            if resp.status_code == 400:
+                logger.warning("Telegram Markdown parse hatasi, duz metin olarak tekrar deneniyor.")
+                payload.pop("parse_mode")
+                resp = requests.post(url, json=payload, timeout=15)
             resp.raise_for_status()
         except requests.RequestException as exc:
             logger.error("Telegram mesaji gonderilemedi: %s", exc)
