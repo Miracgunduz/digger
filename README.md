@@ -1,64 +1,62 @@
-# 🎯 Fırsat Avcısı (Opportunity Hunter)
+# 🎯 Opportunity Hunter
 
-> **Not:** Bu proje, [intern-opportunity-tracker](https://github.com/Miracgunduz/intern-opportunity-tracker)'ın erken prototipidir — burada Reddit'ten **indie/side-project fikirleri** taranırken, intern-opportunity-tracker **kariyer fırsatlarına** (staj, sertifika, hackathon) odaklanan, aktif olarak geliştirilen sürümdür.
+> **Note:** This project is an early prototype of [intern-opportunity-tracker](https://github.com/Miracgunduz/intern-opportunity-tracker) — this one scans Reddit for **indie/side-project ideas**, while intern-opportunity-tracker is the actively developed version focused on **career opportunities** (internships, certifications, hackathons).
 
-Reddit'i günde iki kez tarayıp indie/side-project fikirlerini yapay zekayla analiz eden ve
-sonuçları Telegram'a anlık bülten olarak gönderen, tamamen **ücretsiz** altyapı üzerinde
-çalışan bir bot.
+A bot that scans Reddit twice a day, analyzes indie/side-project ideas with AI, and sends the results to Telegram as an instant digest — running entirely on **free** infrastructure.
 
-## Ne yapıyor?
+## What it does
 
-- Belirlenen 10 subreddit'i (`SideProject`, `startups`, `Entrepreneur`, `micro_saas` vb.)
-  Reddit'in kimlik doğrulama gerektirmeyen RSS uçlarından tarar.
-- Bulduğu gönderileri Google Gemini ile analiz eder; her fikir için özet, mantık gerekçesi,
-  teknik zorluk puanı, gereken teknolojiler, rakip analizi ve hedef kitle/monetizasyon
-  önerisi çıkarır.
-- Sonucu Telegram'a biçimlendirilmiş bir bülten olarak yollar.
-- Günde iki kez (09:00 / 21:00) otomatik çalışır; ayrıca Telegram komutlarıyla anlık
-  tetiklenebilir.
+- Scans 10 selected subreddits (`SideProject`, `startups`, `Entrepreneur`, `micro_saas`, etc.)
+  via Reddit's authentication-free RSS endpoints.
+- Analyzes the posts it finds with Google Gemini; for each idea it extracts a summary,
+  reasoning, a technical-difficulty score, required technologies, competitor analysis, and a
+  target-audience/monetization suggestion.
+- Sends the result to Telegram as a formatted digest.
+- Runs automatically twice a day (09:00 / 21:00); can also be triggered instantly via
+  Telegram commands.
 
-## Komutlar
+## Commands
 
-| Komut | Açıklama |
+| Command | Description |
 |---|---|
-| `/tara` | Şimdi anlık tarama başlat |
-| `/rakipbul <fikir>` | Verilen fikir için rakip ve pazar boşluğu analizi |
-| `/maliyet <fikir>` | İlk 6 aylık altyapı maliyeti + önerilen minimum abonelik ücreti |
-| `/trendler` | Son 1 haftanın şikayet/fırsat taraması |
-| `/help` | Komut listesi |
+| `/tara` | Start an on-demand scan right now |
+| `/rakipbul <idea>` | Competitor and market-gap analysis for a given idea |
+| `/maliyet <idea>` | First-6-months infrastructure cost + suggested minimum subscription price |
+| `/trendler` | Scan of the last week's complaints/opportunities |
+| `/help` | Command list |
 
-## Mimari
+## Architecture
 
-Tamamen sunucusuz ve ücretsiz katmanlar üzerine kurulu:
+Built entirely on serverless, free-tier infrastructure:
 
-- **GitHub Actions** — zamanlanmış tarama (`schedule`) ve komut çalıştırma
-  (`workflow_dispatch`), sınırsız outbound ağ erişimiyle Reddit RSS + Gemini çağrılarını yapar.
-- **Cloudflare Workers** — Telegram webhook'unu anında karşılar, `/help` gibi komutları
-  doğrudan yanıtlar, ağır işlemleri GitHub Actions'a devreder.
-- **Google Gemini (ücretsiz katman)** — fikir analizi, rakip araştırması, maliyet hesabı.
-- **Telegram Bot API** — bildirim ve komut arayüzü.
+- **GitHub Actions** — scheduled scans (`schedule`) and command execution
+  (`workflow_dispatch`), making the Reddit RSS + Gemini calls with unlimited outbound network access.
+- **Cloudflare Workers** — instantly handles the Telegram webhook, responds directly to
+  commands like `/help`, and delegates heavier work to GitHub Actions.
+- **Google Gemini (free tier)** — idea analysis, competitor research, cost estimation.
+- **Telegram Bot API** — notification and command interface.
 
-Sürekli çalışan bir sunucu veya polling döngüsü yok; her tetiklenme kendi işini yapıp kapanır.
+No long-running server or polling loop — each trigger does its job and exits.
 
 ```
-Telegram mesajı → Cloudflare Worker (anlık) → GitHub Actions workflow_dispatch → Reddit RSS + Gemini → Telegram bülteni
+Telegram message → Cloudflare Worker (instant) → GitHub Actions workflow_dispatch → Reddit RSS + Gemini → Telegram digest
 ```
 
-## Kurulum
+## Setup
 
-1. `requirements.txt` bağımlılıklarını kurun: `pip install -r requirements.txt`
-2. `.env.example` dosyasını `.env` olarak kopyalayıp kendi anahtarlarınızı girin
+1. Install dependencies: `pip install -r requirements.txt`
+2. Copy `.env.example` to `.env` and fill in your own keys
    (`GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `REDDIT_USER_AGENT`).
-3. GitHub reposunda aynı değerleri **Settings → Secrets and variables → Actions** altına ekleyin.
-4. `worker/telegram-webhook.js` dosyasını Cloudflare Workers'a deploy edip gerekli ortam
-   değişkenlerini (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `WEBHOOK_SECRET`, `GH_PAT`,
-   `GH_REPO`, `GH_WORKFLOW_FILE`) tanımlayın.
-5. Telegram `setWebhook` çağrısıyla webhook'u Worker'a bağlayın.
+3. Add the same values to your GitHub repo under **Settings → Secrets and variables → Actions**.
+4. Deploy `worker/telegram-webhook.js` to Cloudflare Workers and set the required environment
+   variables (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `WEBHOOK_SECRET`, `GH_PAT`,
+   `GH_REPO`, `GH_WORKFLOW_FILE`).
+5. Connect the webhook to the Worker with a Telegram `setWebhook` call.
 
-## Teknik notlar
+## Technical notes
 
-- Reddit'in resmi API'si yerine kimlik doğrulama gerektirmeyen `.rss` / `search.rss` uçları
-  kullanılır; hız sınırına karşı otomatik backoff/retry uygulanır.
-- Gemini yanıtları `response_mime_type: application/json` ile yapılandırılmış JSON olarak alınır.
-- Telegram'ın eski Markdown ayrıştırıcısı kırılgan olduğu için gönderim başarısız olursa
-  otomatik olarak düz metne düşülür.
+- Uses Reddit's authentication-free `.rss` / `search.rss` endpoints instead of the official
+  API; automatic backoff/retry handles rate limits.
+- Gemini responses are requested as structured JSON via `response_mime_type: application/json`.
+- Telegram's legacy Markdown parser is fragile, so sends automatically fall back to plain text
+  on failure.
