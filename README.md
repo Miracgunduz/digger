@@ -1,5 +1,7 @@
 # 🎯 Fırsat Avcısı (Opportunity Hunter)
 
+> **Not:** Bu proje, [intern-opportunity-tracker](https://github.com/Miracgunduz/intern-opportunity-tracker)'ın erken prototipidir — burada Reddit'ten **indie/side-project fikirleri** taranırken, intern-opportunity-tracker **kariyer fırsatlarına** (staj, sertifika, hackathon) odaklanan, aktif olarak geliştirilen sürümdür.
+
 Reddit'i günde iki kez tarayıp indie/side-project fikirlerini yapay zekayla analiz eden ve
 sonuçları Telegram'a anlık bülten olarak gönderen, tamamen **ücretsiz** altyapı üzerinde
 çalışan bir bot.
