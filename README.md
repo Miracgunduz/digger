@@ -1,8 +1,8 @@
-# 🎯 Opportunity Hunter
+# Opportunity Hunter
 
-> **Note:** This project is an early prototype of [intern-opportunity-tracker](https://github.com/Miracgunduz/intern-opportunity-tracker) — this one scans Reddit for **indie/side-project ideas**, while intern-opportunity-tracker is the actively developed version focused on **career opportunities** (internships, certifications, hackathons).
+This was an earlier project of mine before [intern-opportunity-tracker](https://github.com/Miracgunduz/intern-opportunity-tracker) — same general idea, but scanning Reddit for indie/side-project ideas instead of career opportunities. I'm actively developing intern-opportunity-tracker now; this one still runs but isn't getting new features.
 
-A bot that scans Reddit twice a day, analyzes indie/side-project ideas with AI, and sends the results to Telegram as an instant digest — running entirely on **free** infrastructure.
+A bot that scans Reddit twice a day, analyzes indie/side-project ideas with AI, and sends the results to Telegram as an instant digest — running entirely on free infrastructure.
 
 ## What it does
 
