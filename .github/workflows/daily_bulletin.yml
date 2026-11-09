@@ -7,6 +7,9 @@ on:
     - cron: "0 18 * * *"
   workflow_dispatch: {}
 
+permissions:
+  contents: write  # son_calisma.txt commit'i icin gerekli
+
 concurrency:
   group: firsat-avcisi-daily
   cancel-in-progress: false
@@ -32,3 +35,18 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
         run: python notify.py
+
+      - name: Repo'yu aktif tut (GitHub, 60 gun hareketsiz repolarda schedule'i otomatik kapatiyor)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p data
+          date -u +%Y-%m-%dT%H:%M:%SZ > data/son_calisma.txt
+          git add data/son_calisma.txt
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: son calisma $(date -u +%Y-%m-%dT%H:%M)"
+          for attempt in 1 2; do
+            git push && exit 0
+            git pull --rebase origin master
+          done
+          git push
